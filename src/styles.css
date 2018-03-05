@@ -8,9 +8,10 @@ html,body{
 
 
 .mat-toolbar{
-    color: red;
+    color: orange;
     background: #2724244d;
     font-family: 'Lancelot', cursive;
-    font-size: 32px;
+    font-size: 42px;
     text-transform: uppercase;
+    letter-spacing: 3px;
 }

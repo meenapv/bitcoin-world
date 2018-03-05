@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-const d3 = require('d3');
+import { BitcoindataService } from './bitcoindata.service';
+import { Chart } from 'chart.js'
 
 @Component({
   selector: 'app-root',
@@ -8,91 +9,57 @@ const d3 = require('d3');
 })
 export class AppComponent {
     title = 'app';
-    ngOnInit(){
-      this.renderGragh();
-    }
-    renderGragh(){
+    
+  chart = []; // This will hold our chart info
 
-        var svg = d3.select("svg"),
-        margin = {top: 20, right: 80, bottom: 30, left: 50},
-        width = svg.attr("width") - margin.left - margin.right,
-        height = svg.attr("height") - margin.top - margin.bottom,
-        g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  constructor(private _bitcoindata: BitcoindataService) {}
 
-    var parseTime = d3.timeParse("%Y%m%d");
+  ngOnInit() {
+    // this._bitcoindata.bitcoinPrice()
+    //   .subscribe(res => {
+      const res = {"message":"","cod":"200","city_id":2643743,"calctime":0.0875,"cnt":3,"list":[{"main":{"temp":279.946,"temp_min":279.946,"temp_max":279.946,"pressure":1016.76,"sea_level":1024.45,"grnd_level":1016.76,"humidity":100},"wind":{"speed":4.59,"deg":163.001},"clouds":{"all":92},"weather":[{"id":500,"main":"Rain","description":"light rain","icon":"10n"}],"rain":{"3h":2.69},"dt":1485717216},{"main":{"temp":279.946,"temp_min":279.946,"temp_max":279.946,"pressure":1016.76,"sea_level":1024.45,"grnd_level":1016.76,"humidity":100},"wind":{"speed":4.59,"deg":163.001},"clouds":{"all":92},"weather":[{"id":500,"main":"Rain","description":"light rain","icon":"10n"}],"rain":{"3h":2.69},"dt":1485717216},{"main":{"temp":282.597,"temp_min":282.597,"temp_max":282.597,"pressure":1012.12,"sea_level":1019.71,"grnd_level":1012.12,"humidity":98},"wind":{"speed":4.04,"deg":226},"clouds":{"all":92},"weather":[{"id":500,"main":"Rain","description":"light rain","icon":"10n"}],"rain":{"3h":0.405},"dt":1485745061},{"main":{"temp":279.38,"pressure":1011,"humidity":93,"temp_min":278.15,"temp_max":280.15},"wind":{"speed":2.6,"deg":30},"clouds":{"all":90},"weather":[{"id":701,"main":"Mist","description":"mist","icon":"50d"},{"id":741,"main":"Fog","description":"fog","icon":"50d"}],"dt":1485768552}]}
+        let temp_max = res['list'].map(res => res.main.temp_max);
+        let temp_min = res['list'].map(res => res.main.temp_min);
+        let alldates = res['list'].map(res => res.dt)
 
-    var x = d3.scaleTime().range([0, width]),
-        y = d3.scaleLinear().range([height, 0]),
-        z = d3.scaleOrdinal(d3.schemeCategory10);
-
-    var line = d3.line()
-        .curve(d3.curveBasis)
-        .x(function(d) { return x(d.date); })
-        .y(function(d) { return y(d.Price); });
-
-    d3.tsv("assets/data.tsv", type, function(error, data) {
-      if (error) throw error;
-
-      var cities = data.columns.slice(3).map(function(id) {
-        return {
-          id: id,
-          values: data.map(function(d) {
-            return {date: d.date, Price: d[id]};
-          })
-        };
-      });
-
-      x.domain(d3.extent(data, function(d) { return d.date; }));
-
-      y.domain([
-        d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.Price; }); }),
-        d3.max(cities, function(c) { return d3.max(c.values, function(d) { return d.Price; }); })
-      ]);
-
-      z.domain(cities.map(function(c) { return c.id; }));
-
-      g.append("g")
-          .attr("class", "axis axis--x")
-          .attr("transform", "translate(0," + height + ")")
-          .attr("class", "axisRed")
-          .call(d3.axisBottom(x));
-
-      g.append("g")
-          .attr("class", "axis axis--y")
-          .attr("class", "axisRed")
-          .call(d3.axisLeft(y))
-        .append("text")
-          .attr("transform", "rotate(-90)")
-          .attr("y", 6)
-          .attr("dy", "0.71em")
-          .attr("fill", "#000")
-          .style('fill', 'darkOrange')
-          .text("Price");
-
-      var city = g.selectAll(".city")
-        .data(cities)
-        .enter().append("g")
-          .attr("class", "axisRed");
-
-      city.append("path")
-          .attr("class", "line")
-          .attr("d", function(d) { return line(d.values); })
-          .style("stroke", function(d) { return z(d.id); });
-
-      city.append("text")
-          .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
-          .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.Price) + ")"; })
-          .attr("x", 3)
-          .attr("dy", "0.35em")
-          .style("font", "10px sans-serif")
-          .style('fill', 'darkOrange')
-          .text(function(d) { return d.id; });
-    });
-
-    function type(d, _, columns) {
-      d.date = parseTime(d.date);
-      for (var i = 1, n = columns.length, c; i < n; ++i) d[c = columns[i]] = +d[c];
-      return d;
-    }
+        let weatherDates = []
+        alldates.forEach((res) => {
+            let jsdate = new Date(res * 1000)
+            weatherDates.push(jsdate.toLocaleTimeString('en', { year: 'numeric', month: 'short', day: 'numeric' }))
+        })
+        console.log(weatherDates)
+        var ctx = document.getElementById("canvas");
+        this.chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: weatherDates,
+            datasets: [
+              { 
+                data: temp_max,
+                borderColor: "#3cba9f",
+                fill: false
+              },
+              { 
+                data: temp_min,
+                borderColor: "#ffcc00",
+                fill: false
+              },
+            ]
+          },
+          options: {
+            legend: {
+              display: false
+            },
+            scales: {
+              xAxes: [{
+                display: true
+              }],
+              yAxes: [{
+                display: true
+              }],
+            }
+          }
+        });
+      // })
   }
 }
